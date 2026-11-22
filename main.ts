@@ -11,15 +11,29 @@
 // Run it the way the grader does:
 //   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { copyFileSync, mkdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? '/bot';
 const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
+// The video link lives beside this program in the repository, so prefer
+// that copy and only fall back to the grader's /bot mount. If VIDEO.json
+// is missing from both places, fail loudly instead of writing nothing.
+const HERE = dirname(fileURLToPath(import.meta.url));
+const candidates = [join(HERE, 'VIDEO.json'), join(BOT_DIR, 'VIDEO.json')];
+const source = candidates.find((p) => existsSync(p));
+
+if (!source) {
+  console.error(
+    `VIDEO.json not found: looked in ${candidates.join(' and ')} — the entry cannot point at any video`,
+  );
+  process.exit(1);
+}
+
 mkdirSync(OUTPUT_DIR, { recursive: true });
 
-const source = join(BOT_DIR, 'VIDEO.json');
 const target = join(OUTPUT_DIR, 'VIDEO.json');
 
 try {
